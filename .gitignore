@@ -1,2 +1,4 @@
 /google_calendar_config/.credentials/
 /twitter_tokens.json
+/google_calendar_config/calendar_id.json
+/info.log

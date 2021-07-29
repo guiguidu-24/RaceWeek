@@ -1,40 +1,54 @@
-import tweepy
-import config_helpers
+from tweepy import OAuthHandler, API, error
+import config_helpers as config
+import logging
 
 
 class Twitter:
+
     def auth(self, consumer_key: str, consumer_secret: str, access_token: str, access_token_secret: str):
         """
          Se connecte à l'API twitter
          """
-        auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
+
+        self.logger.debug('Set the authentication tokens')
+
+        auth = OAuthHandler(consumer_key, consumer_secret)
         auth.set_access_token(access_token, access_token_secret)
-        api = tweepy.API(auth)
+        api = API(auth)
         return api, auth
 
     def __init__(self,
-                 consumer_key: str = None,
-                 consumer_secret: str = None,
-                 access_token: str = None,
-                 access_token_secret: str = None):
-        if consumer_key or consumer_secret or access_token or access_token_secret is not None:
-            self._api, self._auth = self.auth(consumer_key, consumer_secret, access_token, access_token_secret)
-            return
-        else:
-            # get the different tokens for the authentication
-            tokens = config_helpers.get_json_data('twitter_tokens.json')
-            consumer_tokens = tokens['consumer']
-            access_tokens = tokens['access']
-            self.__init__(consumer_tokens['key'],
-                          consumer_tokens['secret'],
-                          access_tokens['token'],
-                          access_tokens['secret'])
-            return
+                 path: str = 'twitter_tokens.json'):
+        """
+        Default constructor
+        :param path: The relative path of the file that store the twitter credentials
+        """
+
+        self.logger = logging.getLogger('twitter')
+        self.logger.debug('Read the authentication twitter file')
+
+        # get the different tokens for the authentication
+        tokens = config.get_dict_data(path)
+        consumer_tokens = tokens['consumer']
+        access_tokens = tokens['access']
+        self._api, self._auth = self.auth(consumer_tokens['key'],
+                                          consumer_tokens['secret'],
+                                          access_tokens['token'],
+                                          access_tokens['secret'])
+        return
 
     def post(self, content):
+
+        """
+        Post a status on Twitter
+        :param content: The content to post
+        """
+
         if isinstance(content, str):
-            self._api.update_status(content)
+            try:
+                self._api.update_status(content)
+            except error.TweepError as e:
+                self.logger.warning(e.reason)
             return
         else:
             raise NotImplementedError
-
